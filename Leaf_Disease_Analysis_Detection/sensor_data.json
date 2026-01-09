@@ -1,0 +1,7 @@
+{
+    "Temperature": 32.5,
+    "Humidity": 65.0,
+    "Soil_Moisture": 25.0,
+    "Is_Raining": 0, 
+    "Pump": 0
+}
