@@ -8,27 +8,12 @@ from tensorflow.keras.utils import load_img, img_to_array
 from PIL import Image
 from dotenv import load_dotenv
 import time
-import serial
 
 class LeafDiseaseDetector:
     def __init__(self, model_path, db_config):
         self.model = load_model(model_path)
         self.db_config = db_config
-        # self.class_labels = {0: "Healthy", 1: "Powdery", 2: "Rust"}
         self.classes = ['Healthy', 'Powdery', 'Rust']
-        
-        # self.arduino = serial.Serial('COM3', 9600)
-        self.arduino = None
-
-    # def send_status_to_arduino(self, status):
-    #     if hasattr(self, 'arduino') and self.arduino and self.arduino.is_open:
-    #         command = "H" if status == "Healthy" else "D"  # H for Healthy, D for Disease
-    #         self.arduino.write(command.encode('utf-8'))
-    #         print(f"Sent to Arduino: {command} for {status}")
-    #         time.sleep(0.2)  # Increased delay to give ESP32 more time
-    #     else:
-    #         # print("Arduino is not connected!")
-    #         pass
 
     def capture_image(self, image_path):
         cap = cv2.VideoCapture(0)  # Open the default camera
@@ -46,7 +31,6 @@ class LeafDiseaseDetector:
             return False
 
     def preprocess_image(self, image_path):
-        # Change target_size to 224, 224
         img = load_img(image_path, target_size=(224, 224))
         img_array = img_to_array(img)
         img_array = np.expand_dims(img_array, axis=0)
@@ -94,7 +78,6 @@ class LeafDiseaseDetector:
                     predicted_class = self.predict(test_img_array)
                     print(f'Predicted class: {predicted_class}')
                     self.insert_image_to_db(image_path, predicted_class)
-                    self.send_status_to_arduino(predicted_class)
 
                 print(f"Waiting for {interval_minutes} minutes before next capture...")
                 time.sleep(interval_minutes * 60)  # Convert minutes to seconds
@@ -102,10 +85,6 @@ class LeafDiseaseDetector:
             print("\nMonitoring stopped by user")
         except Exception as e:
             print(f"\nAn error occurred: {e}")
-        finally:
-            if hasattr(self, 'arduino') and self.arduino and self.arduino.is_open:
-                self.arduino.close()
-                print("Arduino connection closed.")
 
 def main():
     load_dotenv()
