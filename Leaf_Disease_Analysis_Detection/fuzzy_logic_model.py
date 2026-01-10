@@ -4,7 +4,7 @@ from skfuzzy import control as ctrl
 import requests
 import os
 import json
-from datetime import datetime
+from datetime import datetime, time
 from dotenv import load_dotenv
 import sys
 import serial
@@ -194,7 +194,7 @@ class WeatherDecisionTester:
         weather_data_record = {
             "rain_probability": p_rain,
             "forecast_time": forecast_time.isoformat(),
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).isoformat()
         }
 
         self.push_to_database(sensor_data_record, weather_data_record)
@@ -204,7 +204,7 @@ class WeatherDecisionTester:
 if __name__ == "__main__":
     print("Script started...", flush=True)
 
-    SERIAL_PORT = "COM3"
+    SERIAL_PORT = "COM4"
     BAUD_RATE = 115200
 
     tester = WeatherDecisionTester()
@@ -220,22 +220,47 @@ if __name__ == "__main__":
 
     while True:
         try:
-            line = ser.readline().decode('utf-8').strip()
 
-            if line.startswith('{') and line.endswith('}'):
-                arduino_data = json.loads(line)
-                state = tester.compute_decision(arduino_data)
+            if ser is None or not ser.is_open:
+                print(f"Connecting to ESP32 on {SERIAL_PORT}...", end=" ", flush=True)
+                ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=2)
+                print("CONNECTED.")
+                time.sleep(2)
+            
+            while ser.is_open:
+                line = ser.readline().decode('utf-8').strip()
 
-                # Send decision back to ESP32
-                ser.write(f"{state}\n".encode('utf-8'))
-                print(f"Sent to ESP32: {state}", flush=True)
-            else:
-                continue
+                if line.startswith('{') and line.endswith('}'):
+                    arduino_data = json.loads(line)
+                    state = tester.compute_decision(arduino_data)
+
+                    # Send decision back to ESP32
+                    ser.write(f"{state}\n".encode('utf-8'))
+                    print(f"Sent to ESP32: {state}", flush=True)
+                else:
+                    continue
 
         except json.JSONDecodeError:
             print("JSON Decode Error: Invalid JSON format", flush=True)
+        except (serial.SerialException, serial.PortNotOpenError) as e:
+            print(f"\n⚠️ Serial Port Error: {e}")
+            print("ESP32 might have disconnected or reset. Retrying in 5 seconds...")
+            if ser:
+                ser.close()
+            time.sleep(5)
         except KeyboardInterrupt:
             print("Exiting on user request.", flush=True)
+            if ser and ser.is_open:
+                try:
+                    ser.write(b"0\n")  # Safety: Turn off pump
+                    ser.close()
+                except:
+                    pass
             break
         except Exception as e:
             print(f"Error: {e}", flush=True)
+            time.sleep(5)
+        finally: 
+            if 'ser' in locals() and ser.is_open:
+                ser.close()
+                print("Serial connection closed safely.")

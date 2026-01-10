@@ -1,12 +1,8 @@
-# image_processing.py
-
-# from email.mime import image
 import os
 import cv2
 import numpy as np
 import psycopg2
 from keras.models import load_model
-# from keras.preprocessing.image import img_to_array
 import tensorflow as tf
 from tensorflow.keras.utils import load_img, img_to_array
 from PIL import Image
@@ -23,18 +19,16 @@ class LeafDiseaseDetector:
         
         # self.arduino = serial.Serial('COM3', 9600)
         self.arduino = None
- 
-    def send_status_to_arduino(self, status):
-        if hasattr(self, 'arduino') and self.arduino and self.arduino.is_open:
-            command = "H" if status == "Healthy" else "D"  # H for Healthy, D for Disease
-            self.arduino.write(command.encode('utf-8'))
-            print(f"Sent to Arduino: {command} for {status}")
-            time.sleep(0.2)  # Increased delay to give ESP32 more time
-        else:
-            # print("Arduino is not connected!")
-            pass
 
-    
+    # def send_status_to_arduino(self, status):
+    #     if hasattr(self, 'arduino') and self.arduino and self.arduino.is_open:
+    #         command = "H" if status == "Healthy" else "D"  # H for Healthy, D for Disease
+    #         self.arduino.write(command.encode('utf-8'))
+    #         print(f"Sent to Arduino: {command} for {status}")
+    #         time.sleep(0.2)  # Increased delay to give ESP32 more time
+    #     else:
+    #         # print("Arduino is not connected!")
+    #         pass
 
     def capture_image(self, image_path):
         cap = cv2.VideoCapture(0)  # Open the default camera
@@ -51,13 +45,6 @@ class LeafDiseaseDetector:
             print("Error: Could not read frame.")
             return False
 
-    # def preprocess_image(self, image_path):
-    #     test_img = Image.open(image_path).resize((225, 225))  # Load and resize the image using PIL
-    #     test_img_array = img_to_array(test_img)
-    #     test_img_array = np.expand_dims(test_img_array, axis=0)  # Add batch dimension
-    #     test_img_array /= 255.0  # Normalize the image
-    #     return test_img_array
-
     def preprocess_image(self, image_path):
         # Change target_size to 224, 224
         img = load_img(image_path, target_size=(224, 224))
@@ -66,11 +53,6 @@ class LeafDiseaseDetector:
 
         # Scale pixels to [0, 1]
         return img_array / 255.0
-
-    # def predict(self, test_img_array):
-    #     predictions = self.model.predict(test_img_array)
-    #     predicted_class = np.argmax(predictions, axis=1)
-    #     return self.class_labels.get(predicted_class[0], "Unknown")
 
     def predict(self, img_array):
         predictions = self.model.predict(img_array)
@@ -82,11 +64,6 @@ class LeafDiseaseDetector:
         
         print(f"Prediction: {result} (Confidence: {confidence:.2f}%)")
         return result
-
-        # EXACT order for this Kaggle dataset
-        # classes = ['Healthy', 'Powdery', 'Rust'] 
-
-        # return classes[class_idx]
 
     def insert_image_to_db(self, image_path, predicted_class):
         connection = None
@@ -135,11 +112,6 @@ def main():
 
     # Database configuration
     db_config = {
-    #    'user': "postgres.zsniufaudrldmnecbupq",
-    #    'password': "CPC357_Project",
-    #    'host': "aws-0-ap-southeast-1.pooler.supabase.com",
-    #    'port': "6543",
-    #    'dbname': "postgres"
         'user': "postgres.eeiazmvadvbflsuulcpz",
         'password': "357IIooTT202526^^",
         'host': "aws-1-ap-south-1.pooler.supabase.com",
@@ -151,9 +123,6 @@ def main():
     model_path = os.path.join(script_dir, 'leaf_disease_detection_model.keras')
     image_path = os.path.join(script_dir, 'snapshot.jpg')
     detector = LeafDiseaseDetector(model_path, db_config)
-    
-    # Start the monitoring loop with 30-minute interval
-    # detector.run_monitoring_loop(image_path, interval_minutes=30)
 
     # For testing purposes, run loop with 1-minute interval
     detector.run_monitoring_loop(image_path, interval_minutes=0.2)
