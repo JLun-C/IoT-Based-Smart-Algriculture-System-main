@@ -1,3 +1,4 @@
-Leaf_Disease_Analysis_Detection/.venv/
+.conda/
+Leaf_Disease_Analysis_Detection/.env
 Leaf_Disease_Analysis_Detection/Dataset/
 Leaf_Disease_Analysis_Detection/snapshot.jpg
