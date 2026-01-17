@@ -1,6 +1,6 @@
 .conda/
 *.h5
 *.hdf5
-Leaf_Disease_Analysis_Detection/.env
-Leaf_Disease_Analysis_Detection/Dataset/
-Leaf_Disease_Analysis_Detection/snapshot.jpg
+Intelligent_Components/.env
+Intelligent_Components/Dataset/
+Intelligent_Components/snapshot.jpg
